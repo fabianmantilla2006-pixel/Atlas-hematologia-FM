@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas de hematología</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Paleta inspirada en un frotis teñido con Wright-Giemsa */
+:root{
+  --frotis:#F4E9F1;      /* fondo del frotis */
+  --papel:#FFFAFC;       /* superficies */
+  --nucleo:#34205F;      /* núcleo púrpura */
+  --citoplasma:#6F86C8;  /* citoplasma basófilo */
+  --eosina:#E0553D;      /* gránulos eosinófilos */
+  --hematie:#D9777F;     /* eritrocito */
+  --tinta:#2A1B3D;
+  --suave:#6B5A7E;
+  --linea:#DCC7D8;
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--frotis);color:var(--tinta);font-family:var(--sans);line-height:1.55}
+a,button,input{font:inherit}
+:focus-visible{outline:3px solid var(--eosina);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* Cabecera: el frotis es el elemento memorable */
+header{background:var(--nucleo);color:#F7EAF4;position:relative;overflow:hidden}
+header .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;padding-top:44px;padding-bottom:44px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(2.1rem,5vw,3.4rem);line-height:1.05;margin:0 0 12px;letter-spacing:-.01em}
+header p{margin:0;max-width:46ch;color:#DCC7E6}
+header svg{width:100%;height:auto;display:block}
+
+/* Controles */
+.controls{position:sticky;top:0;z-index:5;background:var(--frotis);border-bottom:1px solid var(--linea);padding:14px 0}
+.controls .wrap{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--linea);background:var(--papel);color:var(--tinta);padding:7px 14px;border-radius:999px;cursor:pointer;font-weight:500;font-size:.92rem}
+.chip i{width:11px;height:11px;border-radius:50%;background:var(--c,var(--nucleo))}
+.chip[aria-pressed="true"]{background:var(--nucleo);border-color:var(--nucleo);color:#fff}
+.chip[aria-pressed="true"] i{box-shadow:0 0 0 2px #fff}
+.search{border:1.5px solid var(--linea);background:var(--papel);border-radius:10px;padding:8px 12px;min-width:220px;color:var(--tinta)}
+.count{width:100%;margin:6px 0 0;color:var(--suave);font-size:.88rem}
+
+/* Galería */
+main{padding:28px 0 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.card{background:var(--papel);border:1px solid var(--linea);border-radius:14px;overflow:hidden;cursor:pointer;text-align:left;padding:0;border-top:5px solid var(--c);transition:transform .15s}
+.card:hover{transform:translateY(-3px)}
+.card .ph{aspect-ratio:1;background:#2b1a4d;display:block;width:100%;object-fit:cover}
+.card h3{font-family:var(--serif);font-size:1.15rem;margin:12px 14px 2px}
+.card p{margin:0 14px 14px;color:var(--suave);font-size:.88rem}
+.grupo{grid-column:1/-1;font-family:var(--serif);font-size:1.5rem;margin:22px 0 0;padding-bottom:6px;border-bottom:3px solid var(--c)}
+.vacio{padding:40px 0;color:var(--suave)}
+
+/* Ficha */
+dialog{border:0;padding:0;border-radius:18px;max-width:900px;width:calc(100% - 24px);background:var(--papel);color:var(--tinta)}
+dialog::backdrop{background:rgba(30,15,55,.72)}
+.ficha{display:grid;grid-template-columns:1.05fr 1fr}
+.zoom{position:relative;overflow:hidden;background:#2b1a4d;min-height:320px;cursor:zoom-in}
+.zoom.on{cursor:zoom-out}
+.zoom img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;transform-origin:50% 50%}
+.zoom.on img{transform:scale(2.6)}
+.zoom small{position:absolute;left:10px;bottom:10px;background:rgba(30,15,55,.75);color:#fff;padding:3px 10px;border-radius:999px;font-size:.78rem}
+.info{padding:24px 26px 26px;border-top:6px solid var(--c)}
+.info h2{font-family:var(--serif);font-size:1.9rem;line-height:1.1;margin:0 0 4px}
+.info .lin{color:var(--suave);margin:0 0 16px}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px}
+dt{font-weight:600;color:var(--nucleo)}
+dd{margin:0}
+.nota{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--linea);color:var(--suave);font-size:.92rem}
+.cerrar{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,250,252,.92);color:var(--nucleo);font-size:1.3rem;cursor:pointer}
+footer{border-top:1px solid var(--linea);padding:22px 0 40px;color:var(--suave);font-size:.88rem}
+
+@media (max-width:760px){
+  header .wrap{grid-template-columns:1fr}
+  .ficha{grid-template-columns:1fr}
+  .zoom{min-height:260px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>Atlas de hematología</h1>
+      <p>Morfología celular de la sangre y la médula ósea, organizada por linaje. Toca una célula para ver su ficha y ampliar la imagen.</p>
+    </div>
+    <!-- Frotis ilustrado: eritrocitos y un leucocito con núcleo lobulado -->
+    <svg viewBox="0 0 400 240" role="img" aria-label="Ilustración de un frotis de sangre con eritrocitos y un leucocito">
+      <g fill="#D9777F" opacity=".95">
+        <circle cx="50" cy="48" r="24"/><circle cx="330" cy="40" r="22"/><circle cx="360" cy="150" r="25"/>
+        <circle cx="40" cy="170" r="22"/><circle cx="120" cy="205" r="24"/><circle cx="290" cy="205" r="23"/>
+        <circle cx="105" cy="38" r="20"/><circle cx="250" cy="28" r="19"/>
+      </g>
+      <g fill="#F2B3B8">
+        <circle cx="50" cy="48" r="9"/><circle cx="330" cy="40" r="8"/><circle cx="360" cy="150" r="9"/>
+        <circle cx="40" cy="170" r="8"/><circle cx="120" cy="205" r="9"/><circle cx="290" cy="205" r="8"/>
+        <circle cx="105" cy="38" r="7"/><circle cx="250" cy="28" r="7"/>
+      </g>
+      <circle cx="200" cy="120" r="70" fill="#C9A9DD"/>
+      <g fill="#E0553D"><circle cx="160" cy="165" r="3"/><circle cx="178" cy="178" r="3"/><circle cx="215" cy="172" r="3"/><circle cx="238" cy="160" r="3"/><circle cx="150" cy="140" r="3"/><circle cx="250" cy="138" r="3"/><circle cx="190" cy="185" r="3"/></g>
+      <g fill="#4A2D86"><ellipse cx="165" cy="100" rx="27" ry="19"/><ellipse cx="208" cy="88" rx="25" ry="18"/><ellipse cx="236" cy="118" rx="20" ry="26"/><ellipse cx="185" cy="132" rx="22" ry="16"/></g>
+    </svg>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap">
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por linaje"></div>
+    <input class="search" id="q" type="search" placeholder="Buscar célula" aria-label="Buscar célula">
+    <p class="count" id="count" aria-live="polite"></p>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+    <div class="grid" id="grid"></div>
+    <p class="vacio" id="vacio" hidden>No hay células con ese filtro. Prueba con otro linaje o borra la búsqueda.</p>
+  </div>
+</main>
+
+<footer><div class="wrap">Atlas de hematología · Curso, universidad y año. Crédito de las imágenes: autor/a de las láminas.</div></footer>
+
+<dialog id="dlg" aria-labelledby="f-nombre">
+  <button class="cerrar" id="cerrar" aria-label="Cerrar ficha">×</button>
+  <div class="ficha">
+    <div class="zoom" id="zoom"><img id="f-img" alt=""><small>Clic para ampliar</small></div>
+    <div class="info" id="info">
+      <h2 id="f-nombre"></h2>
+      <p class="lin" id="f-lin"></p>
+      <dl id="f-dl"></dl>
+      <p class="nota" id="f-nota"></p>
+    </div>
+  </div>
+</dialog>
+
+<script>
+/* ========= 1. LINAJES (nombre y color) ========= */
+const LINAJES = {
+  "Mieloide": "#B5428C",
+  "Alteraciones mieloides": "#7A2E5C",
+  "Monocítico": "#7A5BB5",
+  "Linfoide": "#3F5BB5",
+  "Eritroide": "#D9534F",
+  "Alteraciones eritrocitarias": "#B04A2F",
+  "Reticulocitos": "#2E8B84",
+  "Plaquetas": "#E08A2E",
+  "Hemoparasitos":"#E08A2E",
+  "Otros hallazgos": "#6B5A7E"
+};
+
+/* ========= 2. CÉLULAS =========
+   Para agregar una célula, copia un bloque y cambia los datos.
+   Sube tu foto a la carpeta img/ y escribe su nombre en "img".
+   Los textos de abajo son ejemplos: reemplázalos con los de tu curso. */
+const CELULAS = [
+  {nombre:"Neutrófilo segmentado", linaje:"Mieloide", estadio:"Maduro", img:"img/neutrofilo.jpg.jpeg",
+   tamano:"10–15 µm",
+   nucleo:"2 a 5 lóbulos unidos por filamentos finos de cromatina",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos neutrófilos",
+   rango:"2.000–7.500/µL (40–75 % de los leucocitos)",
+   nota:"Leucocito más abundante en sangre periférica. Neutrofilia: infección bacteriana, estrés. Neutropenia: mayor riesgo de infección."},
+  {nombre:"Neutrófilo segmentado", linaje:"Mieloide", estadio:"Maduro", img:"img/neutrofilo_2.jpg.jpeg",
+   tamano:"10–15 µm",
+   nucleo:"2 a 5 lóbulos unidos por filamentos finos de cromatina",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos neutrófilos",
+   rango:"2.000–7.500/µL (40–75 % de los leucocitos)",
+   nota:"Leucocito más abundante en sangre periférica. Neutrofilia: infección bacteriana, estrés. Neutropenia: mayor riesgo de infección."},
+  {nombre:"Neutrófilo hipersegmentado", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/zona_no_ideal_neutrofilo_hipersegmentado.jpg.jpeg",
+   tamano:"10–15 µm, a veces mayor (macropolicito)",
+   nucleo:"6 o más lóbulos, o más del 3 % de los neutrófilos con 5 o más lóbulos; lóbulos unidos por filamentos finos",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos neutrófilos",
+   rango:"Normal: 3 a 5 lóbulos por neutrófilo",
+   dx:"Anemia megaloblástica (déficit de vitamina B12 o folato), síndromes mielodisplásicos, quimioterapia, infecciones crónicas. Es un signo temprano de anemia megaloblástica."},
+  {nombre:"Neutrófilo hipersegmentado", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/neutrofilo_hipersegmentado.jpg.jpeg",
+   tamano:"10–15 µm, a veces mayor (macropolicito)",
+   nucleo:"6 o más lóbulos, o más del 3 % de los neutrófilos con 5 o más lóbulos; lóbulos unidos por filamentos finos",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos neutrófilos",
+   rango:"Normal: 3 a 5 lóbulos por neutrófilo",
+   dx:"Anemia megaloblástica (déficit de vitamina B12 o folato), síndromes mielodisplásicos, quimioterapia, infecciones crónicas. Es un signo temprano de anemia megaloblástica."},
+  {nombre:"Neutrófilo hipersegmentado", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/neutrofilo_hipersegmentado_seis_lobulos.jpg.jpeg",
+   tamano:"10–15 µm, a veces mayor (macropolicito)",
+   nucleo:"6 o más lóbulos, o más del 3 % de los neutrófilos con 5 o más lóbulos; lóbulos unidos por filamentos finos",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos neutrófilos",
+   rango:"Normal: 3 a 5 lóbulos por neutrófilo",
+   dx:"Anemia megaloblástica (déficit de vitamina B12 o folato), síndromes mielodisplásicos, quimioterapia, infecciones crónicas. Es un signo temprano de anemia megaloblástica."},
+  {nombre:"Reticulocitos", linaje:"Reticulocitos", estadio:"Inmaduro", img:"img/reticulocitos.jpg.jpeg",
+   tamano:"7–10 µm, algo mayores que el eritrocito maduro",
+   nucleo:"Sin núcleo",
+   citoplasma:"Eritrocito joven policromatófilo; con azul de cresilo muestra un retículo azul-violeta de ARN residual",
+   inclusiones:"Precipitado de ARN (reticulofilamentos)",
+   tincion:"Azul de cresilo brillante",
+   rango:"0,5–2 % de los eritrocitos (≈25–100 ×10⁹/L según laboratorio)",
+   dx:"Aumentados (reticulocitosis): anemia regenerativa, por hemólisis o hemorragia. Disminuidos: anemia arregenerativa, por falla de producción (ferropenia, déficit de B12, aplasia)."},
+  {nombre:"Reticulocitos", linaje:"Reticulocitos", estadio:"Inmaduro", img:"img/reticulocitos_dos.jpg.jpeg",
+   tamano:"7–10 µm, algo mayores que el eritrocito maduro",
+   nucleo:"Sin núcleo",
+   citoplasma:"Eritrocito joven policromatófilo; con azul de cresilo muestra un retículo azul-violeta de ARN residual",
+   inclusiones:"Precipitado de ARN (reticulofilamentos)",
+   tincion:"Azul de cresilo brillante",
+   rango:"0,5–2 % de los eritrocitos (≈25–100 ×10⁹/L según laboratorio)",
+   dx:"Aumentados (reticulocitosis): anemia regenerativa, por hemólisis o hemorragia. Disminuidos: anemia arregenerativa, por falla de producción (ferropenia, déficit de B12, aplasia)."},
+  {nombre:"Plasmocito", linaje:"Linfoide", estadio:"Maduro", img:"img/plasmocito.jpg.jpeg",
+   tamano:"10–20 µm",
+   nucleo:"Redondo y excéntrico, cromatina en grumos (rueda de carreta)",
+   citoplasma:"Abundante, intensamente basófilo (azul), con halo claro perinuclear (aparato de Golgi)",
+   nc:"Baja",
+   rango:"Ausentes en sangre periférica normal; en médula ósea, menos del 5 %",
+   nota:"Su presencia en sangre puede verse en infecciones virales, mieloma múltiple y leucemia de células plasmáticas."},
+  {nombre:"Neutrófilo con granulaciones tóxicas", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/neutrofilo_granulaciones_toxicas.jpg.jpeg",
+   tamano:"10–15 µm",
+   nucleo:"Segmentado o en banda",
+   citoplasma:"Gránulos gruesos, oscuros, azul-negro (primarios); a veces con cuerpos de Döhle y vacuolas",
+   rango:"Normal: gránulos finos, sin gránulos tóxicos",
+   dx:"Infección bacteriana grave, sepsis, quemaduras, inflamación intensa. Exclusiva de neutrófilos."},
+  {nombre:"Plaquetas", linaje:"Plaquetas", estadio:"Maduro", img:"img/plaquetas.jpg.jpeg",
+   tamano:"2–4 µm",
+   nucleo:"Sin núcleo (fragmentos de megacariocito)",
+   citoplasma:"Azul pálido con gránulos azurófilos finos color púrpura",
+   rango:"150.000–400.000/µL (150–400 ×10⁹/L)",
+   nota:"Menos de 150.000/µL: trombocitopenia. Más de 400.000/µL: trombocitosis."},
+  {nombre:"Neutrófilo de Pelger-Huët", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/neutrofilo_perlger_huet.jpg .jpeg",
+   tamano:"10–15 µm",
+   nucleo:"Hiposegmentado: 2 lóbulos en forma de pesa o pince-nez, o redondo; cromatina muy condensada",
+   citoplasma:"Pálido, rosado, con granulación normal (en la forma congénita)",
+   rango:"Normal: 3 a 5 lóbulos",
+   dx:"Congénita: autosómica dominante, benigna y de función normal. Pseudo-Pelger-Huët (adquirida, con citoplasma hipogranular): síndromes mielodisplásicos, tras quimioterapia."},
+  {nombre:"Neutrófilo en banda", linaje:"Mieloide", estadio:"Inmaduro", img:"img/neutrofilo_banda.jpg.jpeg",
+   tamano:"10–18 µm",
+   nucleo:"Alargado en U o herradura, de grosor uniforme, sin segmentar; cromatina condensada",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos",
+   rango:"0–500/µL (menos de ~8 % de los leucocitos)",
+   nota:"Si aumentan (más de ~11 %) hay desviación a la izquierda, propia de infección o inflamación."},
+  {nombre:"Neutrófilo en banda", linaje:"Mieloide", estadio:"Inmaduro", img:"img/neutrofilo_banda_dos.jpg.jpeg",
+   tamano:"10–18 µm",
+   nucleo:"Alargado en U o herradura, de grosor uniforme, sin segmentar; cromatina condensada",
+   citoplasma:"Pálido, rosado (no basófilo), con gránulos finos",
+   rango:"0–500/µL (menos de ~8 % de los leucocitos)",
+   nota:"Si aumentan (más de ~11 %) hay desviación a la izquierda, propia de infección o inflamación."},
+  {nombre:"Monocito", linaje:"Monocítico", estadio:"Maduro", img:"img/monocito.jpg.jpeg",
+   tamano:"12–20 µm",
+   nucleo:"Indentado o en forma de riñón, cromatina laxa en red",
+   citoplasma:"Abundante, gris azulado (algo basófilo), aspecto de vidrio esmerilado, con vacuolas y granulación fina",
+   nc:"Intermedia",
+   rango:"200–800/µL (2–10 % de los leucocitos)",
+   nota:"Monocitosis (más de 800/µL): infecciones crónicas, recuperación de neutropenia, neoplasias mieloides como la leucemia mielomonocítica crónica (desde 1.000/µL)."},
+  {nombre:"Monocito", linaje:"Monocítico", estadio:"Maduro", img:"img/monocito_2.jpg.jpeg",
+   tamano:"12–20 µm",
+   nucleo:"Indentado o en forma de riñón, cromatina laxa en red",
+   citoplasma:"Abundante, gris azulado (algo basófilo), aspecto de vidrio esmerilado, con vacuolas y granulación fina",
+   nc:"Intermedia",
+   rango:"200–800/µL (2–10 % de los leucocitos)",
+   nota:"Monocitosis (más de 800/µL): infecciones crónicas, recuperación de neutropenia, neoplasias mieloides como la leucemia mielomonocítica crónica (desde 1.000/µL)."},
+  {nombre:"Linfocito", linaje:"Linfoide", estadio:"Maduro", img:"img/linfocito.jpg.jpeg",
+   tamano:"7–10 µm (pequeño); hasta 15 µm (grande)",
+   nucleo:"Redondo, cromatina densa en bloques",
+   citoplasma:"Escaso, azul claro (basófilo leve)",
+   nc:"Alta",
+   rango:"1.000–4.000/µL (20–40 % de los leucocitos)",
+   nota:"Linfocitosis: infecciones virales, leucemia linfática crónica."},
+  {nombre:"Linfocito reactivo", linaje:"Linfoide", estadio:"Alteración", img:"img/linfocito_reactivo.jpg.jpeg",
+   tamano:"15–25 µm",
+   nucleo:"Irregular u oval, cromatina más laxa",
+   citoplasma:"Abundante, basófilo (azul intenso), de borde festoneado que se amolda a los eritrocitos vecinos",
+   nc:"Media",
+   rango:"Normal: pocos o ninguno",
+   dx:"Mononucleosis infecciosa (virus de Epstein-Barr), citomegalovirus y otras infecciones virales, reacciones a fármacos."},
+  {nombre:"Inclusiones de Howell-Jolly", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/inclusiones_howell_jolly.jpg.jpeg",
+   tamano:"Inclusión de ~0,5 µm dentro de un eritrocito de 7–8 µm",
+   nucleo:"Remanente de ADN: esfera única, violeta oscura",
+   citoplasma:"Eritrocito con coloración normal",
+   rango:"Normal: ausentes",
+   dx:"Asplenia o hipoesplenismo (incluye esplenectomía y anemia falciforme), anemia megaloblástica."},
+  {nombre:"Inclusiones de Howell-Jolly", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/inclusiones_howell_jolly_mejor.jpg.jpeg",
+   tamano:"Inclusión de ~0,5 µm dentro de un eritrocito de 7–8 µm",
+   nucleo:"Remanente de ADN: esfera única, violeta oscura",
+   citoplasma:"Eritrocito con coloración normal",
+   rango:"Normal: ausentes",
+   dx:"Asplenia o hipoesplenismo (incluye esplenectomía y anemia falciforme), anemia megaloblástica."},
+  {nombre:"Fenómeno de Rouleaux", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/fenomeno_rouleaux.jpg.jpeg",
+   tamano:"Eritrocitos de 7–8 µm apilados",
+   nucleo:"Sin núcleo",
+   citoplasma:"Eritrocitos normocrómicos apilados como monedas",
+   rango:"Normal: ausente (puede ser artefacto en zonas gruesas)",
+   dx:"Aumento de proteínas plasmáticas (fibrinógeno, inmunoglobulinas): mieloma múltiple, inflamación crónica. Asociado a VSG elevada."},
+  {nombre:"Excentrocito", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/excentrocito.jpg.jpeg",
+   tamano:"6–8 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Hemoglobina desplazada a un lado, con zona clara excéntrica",
+   rango:"Normal: ausentes",
+   dx:"Hemólisis oxidativa, por ejemplo déficit de G6PD."},
+  {nombre:"Esquistocito y dacriocito", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/esquistocito_dacriocito.jpg.jpeg",
+   tamano:"Fragmentos menores de 7 µm; dacriocitos de 6–8 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Esquistocito: fragmento irregular (casco, triángulo). Dacriocito: forma de lágrima",
+   rango:"Normal: menos de 1 %",
+   dx:"Esquistocito: anemia hemolítica microangiopática (CID, PTT, SHU) y válvulas cardíacas. Dacriocitos: mielofibrosis, infiltración medular, talasemia mayor."},
+  {nombre:"Esferocitos", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/esferocitos.jpg.jpeg",
+   tamano:"5–7 µm (menores que lo normal)",
+   nucleo:"Sin núcleo",
+   citoplasma:"Denso, intensamente teñido, sin palidez central",
+   rango:"Normal: 0–2 %",
+   dx:"Esferocitosis hereditaria, anemia hemolítica autoinmune (con Coombs positivo)."},
+  {nombre:"Eritroblasto ortocromático con inclusión de Howell-Jolly", linaje:"Eritroide", estadio:"Alteración", img:"img/eritoblasto_ortocromatico_howell_jolly.jpg.jpeg",
+   tamano:"8–12 µm",
+   nucleo:"Pequeño, redondo, picnótico, central; con cuerpo de Howell-Jolly",
+   citoplasma:"Rosado-azulado, parecido al del eritrocito (ya casi sin basofilia)",
+   nc:"Baja",
+   rango:"Normal: ausente en sangre periférica del adulto",
+   dx:"Aparece en hemólisis, hipoxia, infiltración medular y asplenia."},
+  {nombre:"Equinocitos", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/equinocitos.jpg.jpeg",
+   tamano:"7–8 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Espículas cortas, regulares y numerosas (10 a 30)",
+   rango:"Normal: ausentes",
+   dx:"Con frecuencia son artefacto de preparación o de muestra vieja; también en uremia y deshidratación."},
+  {nombre:"Eosinófilo", linaje:"Mieloide", estadio:"Maduro", img:"img/eosinofilo.jpg",
+   tamano:"10–15 µm",
+   nucleo:"Bilobulado",
+   citoplasma:"Lleno de gránulos gruesos, uniformes, naranja-rojizos (eosinófilos, no basófilo)",
+   rango:"0–400/µL (1–6 % de los leucocitos)",
+   nota:"Eosinofilia (más de 500/µL): alergias, parasitosis, algunas neoplasias."},
+  {nombre:"Eliptocito y equinocito", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/eliptocito_equinocito.jpg.jpeg",
+   tamano:"Eliptocito: eje mayor de 8–12 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Eliptocito: forma ovalada; equinocito: espículas regulares",
+   rango:"Normal: menos de 2 % de ovalocitos",
+   dx:"Eliptocitosis hereditaria, ferropenia (células en lápiz), anemia megaloblástica."},
+  {nombre:"Dianocito y drepanocito", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/dianocito_drepanocito.jpg.jpeg",
+   tamano:"7–8 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Dianocito: forma de diana. Drepanocito: forma de hoz",
+   rango:"Normal: 0–2 % de dianocitos; drepanocitos ausentes",
+   dx:"Dianocitos: talasemia, hemoglobinopatías (HbC), hepatopatía, ferropenia, esplenectomía. Drepanocitos: anemia falciforme (HbS)."},
+  {nombre:"Célula en apoptosis", linaje:"Otros hallazgos", estadio:"Alteración", img:"img/celula_apoptosis.jpg.jpeg",
+   tamano:"Reducida respecto a la célula original",
+   nucleo:"Cromatina condensada y fragmentada (picnosis, cariorrexis)",
+   citoplasma:"Retraído, hipereosinófilo, con bordes irregulares",
+   rango:"Normal: escasas",
+   nota:"Origen celular por confirmar con el docente. Puede verse por envejecimiento de la muestra o por enfermedad."},
+  {nombre:"Blastos", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/blastos.jpg.jpeg",
+   tamano:"12–20 µm",
+   nucleo:"Redondo u oval, cromatina fina y laxa, nucléolos visibles",
+   citoplasma:"Escaso, basófilo (azul), sin gránulos o con pocos",
+   nc:"Alta",
+   rango:"Normal: 0 % en sangre periférica (menos del 5 % en médula ósea)",
+   dx:"Leucemias agudas. Un 20 % o más de blastos en sangre o médula define leucemia aguda en el criterio clásico. El linaje (mieloide o linfoide) se define con citometría de flujo."},
+  {nombre:"Basófilo", linaje:"Mieloide", estadio:"Maduro", img:"img/basofilo.jpg.jpeg",
+   tamano:"10–14 µm",
+   nucleo:"Lobulado, tapado por los gránulos",
+   citoplasma:"Gránulos grandes, irregulares, azul-púrpura oscuros (basófilos)",
+   rango:"0–100/µL (0–1 % de los leucocitos)",
+   nota:"Basofilia (más de 100/µL): neoplasias mieloproliferativas (como la leucemia mieloide crónica), hipersensibilidad, hipotiroidismo, ferropenia."},
+  {nombre:"Basófilo y neutrófilo vacuolado", linaje:"Alteraciones mieloides", estadio:"Alteración", img:"img/basofilo_neutrofilo_vacuolado.jpg.jpeg",
+   tamano:"10–15 µm",
+   nucleo:"Basófilo: lobulado, oculto. Neutrófilo: segmentado",
+   citoplasma:"Basófilo: gránulos oscuros. Neutrófilo: vacuolas claras en el citoplasma",
+   rango:"Normal: neutrófilos sin vacuolas",
+   dx:"Vacuolización: infección o sepsis (con granulación tóxica), quemaduras. También puede ser artefacto por EDTA en muestra guardada."},
+  {nombre:"Anulocitos", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/anulocitos.jpg.jpeg",
+   tamano:"7–8 µm",
+   nucleo:"Sin núcleo",
+   citoplasma:"Hipocromía intensa: solo un anillo fino de hemoglobina",
+   rango:"Normal: ausentes (palidez central menor a un tercio del diámetro)",
+   dx:"Anemia ferropénica, talasemia, anemia sideroblástica."},
+  {nombre:"Anillo de Cabot", linaje:"Alteraciones eritrocitarias", estadio:"Alteración", img:"img/anillo de cabot.jpg.jpeg",
+   tamano:"Inclusión en eritrocito de 7–8 µm",
+   nucleo:"Sin núcleo: remanente del huso mitótico",
+   citoplasma:"Filamento rojo-violeta en forma de anillo o de 8",
+   rango:"Normal: ausente",
+   dx:"Anemia megaloblástica, síndromes mielodisplásicos, intoxicación por plomo, anemias hemolíticas."},
+    {"nombre": "Blastos con bastones de Auer", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/blastos_con_bastones_de_AUER.jpeg", "tamano": "12–20 µm", "nucleo": "Redondo u oval, cromatina fina y laxa, nucléolos visibles", "citoplasma": "Escaso a moderado, basófilo (azul), con uno o varios bastones de Auer", "inclusiones": "Bastones de Auer: agujas rojo-violeta formadas por gránulos primarios fusionados", "nc": "Alta", "rango": "Normal: 0 % en sangre periférica (menos del 5 % en médula ósea)", "dx": "Leucemia mieloide aguda (LMA); también síndromes mielodisplásicos con exceso de blastos. Los bastones de Auer indican linaje mieloide y no se ven en blastos linfoides.", "fuente": "<a href=\"https://imagebank.hematology.org/imageset/60101/auer-rod-in-acute-myeloid-leukemia-with-maturation\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: bastón de Auer</a>"},
+  {"nombre": "Mieloblastos con bastones de Auer", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/mieloblastos_con_bastones_de_AUER.jpg.jpeg", "tamano": "12–20 µm", "nucleo": "Redondo u oval, cromatina fina y laxa, nucléolos visibles", "citoplasma": "Escaso a moderado, basófilo (azul), con uno o varios bastones de Auer", "inclusiones": "Bastones de Auer: agujas rojo-violeta formadas por gránulos primarios fusionados", "nc": "Alta", "rango": "Normal: 0 % en sangre periférica (menos del 5 % en médula ósea)", "dx": "Leucemia mieloide aguda (LMA); también síndromes mielodisplásicos con exceso de blastos. Los bastones de Auer indican linaje mieloide y no se ven en blastos linfoides.", "fuente": "<a href=\"https://imagebank.hematology.org/imageset/60101/auer-rod-in-acute-myeloid-leukemia-with-maturation\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: bastón de Auer</a>"},
+  {"nombre": "Célula en apoptosis", "linaje": "Otros hallazgos", "estadio": "Alteración", "img": "fotos13112026 1 14 am/celula_apoptosis_2.jpeg", "tamano": "Reducida respecto a la célula original", "nucleo": "Cromatina condensada y fragmentada (picnosis, cariorrexis)", "citoplasma": "Retraído, hipereosinófilo, con bordes irregulares", "rango": "Normal: escasas", "nota": "Origen celular por confirmar con el docente. Puede verse por envejecimiento de la muestra o por enfermedad."},
+  {"nombre": "Célula peluda", "linaje": "Linfoide", "estadio": "Alteración", "img": "fotos13112026 1 14 am/celula_peluda.jpeg", "tamano": "10–20 µm", "nucleo": "Redondo, oval o reniforme, cromatina laxa y homogénea", "citoplasma": "Abundante, gris azulado pálido, con proyecciones finas (\"pelos\") en toda la periferia", "nc": "Baja a intermedia", "rango": "Normal: ausentes", "dx": "Leucemia de células pilosas (neoplasia B) con mutación BRAF V600E: pancitopenia, esplenomegalia y monocitopenia. TRAP positiva; CD11c, CD25 y CD103 positivos."},
+  {"nombre": "Células de Faggot", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/Celulas_fagoth.jpeg", "tamano": "15–25 µm", "nucleo": "Reniforme o bilobulado, con frecuencia tapado por los gránulos", "citoplasma": "Lleno de gránulos azurófilos gruesos y con múltiples bastones de Auer", "inclusiones": "Haces de bastones de Auer (\"fajos\")", "rango": "Normal: ausentes", "dx": "Leucemia promielocítica aguda (LPA), t(15;17) PML::RARA. Suele cursar con coagulación intravascular diseminada; es una urgencia hematológica que responde a ATRA."},
+  {"nombre": "Células fantasma", "linaje": "Linfoide", "estadio": "Alteración", "img": "fotos13112026 1 14 am/celulas_fantasmas.jpg.jpeg", "tamano": "Núcleo desnudo de ~10–15 µm", "nucleo": "Aplastado y homogéneo, sin detalle de cromatina ni nucléolo", "citoplasma": "Ausente o solo restos", "rango": "Normal: ausentes o muy escasas", "dx": "Artefacto del extendido por fragilidad de los linfocitos; típicas de la leucemia linfática crónica (sombras de Gumprecht).", "nota": "Confirma con el docente si la lámina corresponde a sombras de Gumprecht."},
+  {"nombre": "Eosinófilo", "linaje": "Mieloide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/eosinofilo_2.jpg.jpeg", "tamano": "10–15 µm", "nucleo": "Bilobulado", "citoplasma": "Lleno de gránulos gruesos, uniformes, naranja-rojizos (eosinófilos, no basófilo)", "rango": "0–400/µL (1–6 % de los leucocitos)", "nota": "Eosinofilia (más de 500/µL): alergias, parasitosis, algunas neoplasias."},
+  {"nombre": "Eosinófilo", "linaje": "Mieloide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/eosinofilo_3.jpeg", "tamano": "10–15 µm", "nucleo": "Bilobulado", "citoplasma": "Lleno de gránulos gruesos, uniformes, naranja-rojizos (eosinófilos, no basófilo)", "rango": "0–400/µL (1–6 % de los leucocitos)", "nota": "Eosinofilia (más de 500/µL): alergias, parasitosis, algunas neoplasias."},
+  {"nombre": "Equinocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "fotos13112026 1 14 am/equinocitos.jpeg", "tamano": "7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Espículas cortas, regulares y numerosas (10 a 30)", "rango": "Normal: ausentes", "dx": "Con frecuencia son artefacto de preparación o de muestra vieja; también en uremia y deshidratación."},
+  {"nombre": "Eritroblasto basófilo", "linaje": "Eritroide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/eritoblasto_basofil.jpg", "tamano": "12–17 µm", "nucleo": "Redondo y central, cromatina en grumos, nucléolos poco visibles", "citoplasma": "Intensamente basófilo (azul oscuro), con halo perinuclear claro", "nc": "Alta", "rango": "Ausente en sangre periférica; solo en médula ósea", "dx": "Aumenta en la médula en anemias megaloblásticas, hemólisis y eritroleucemia.", "fuente": "<a href=\"https://imagebank.hematology.org/image/60292/erythroid-precursors\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: precursores eritroides</a>"},
+  {"nombre": "Eritroblasto policromático", "linaje": "Eritroide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/eritoblasto_policromatico.jpg", "tamano": "10–15 µm", "nucleo": "Redondo y central, cromatina condensada en bloques", "citoplasma": "Gris-rosado: mezcla de basofilia (ARN) y hemoglobina (policromatofilia)", "nc": "Media", "rango": "Ausente en sangre periférica; solo en médula ósea", "dx": "Aumenta en hiperplasia eritroide (hemólisis, hemorragia) y anemias megaloblásticas.", "fuente": "<a href=\"https://imagebank.hematology.org/image/60292/erythroid-precursors\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: precursores eritroides</a>"},
+  {"nombre": "Eritroblasto ortocromático", "linaje": "Eritroide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/eritoblasto_ortocromatico.jpeg", "tamano": "8–12 µm", "nucleo": "Pequeño, redondo, picnótico, central", "citoplasma": "Rosado-azulado, parecido al del eritrocito (ya casi sin basofilia)", "nc": "Baja", "rango": "Normal: ausente en sangre periférica del adulto", "dx": "En sangre aparece en hemólisis, hipoxia, infiltración medular y asplenia.", "fuente": "<a href=\"https://imagebank.hematology.org/image/60292/erythroid-precursors\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: precursores eritroides</a>"},
+  {"nombre": "Eritrocito en champiñón", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "fotos13112026 1 14 am/eritrocito_en champiñon.jpeg", "tamano": "6–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Eritrocito con pinzamiento o constricción que le da forma de hongo (célula pinzada)", "rango": "Normal: ausentes", "dx": "Esferocitosis hereditaria, sobre todo por déficit de banda 3.", "nota": "Confirma con el docente el nombre usado en tu curso."},
+  {"nombre": "Linfoblasto", "linaje": "Linfoide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/linfoblasto.jpg.jpeg", "tamano": "10–18 µm", "nucleo": "Redondo u oval, cromatina fina y homogénea, uno o dos nucléolos poco visibles", "citoplasma": "Escaso, azul intenso (basófilo), sin gránulos", "nc": "Alta", "rango": "Normal: ausentes en sangre periférica; en médula, menos del 5 %", "dx": "Leucemia linfoblástica aguda (LLA), más frecuente en niños. Se confirma con citometría de flujo (TdT, CD19, CD3)."},
+  {"nombre": "Linfoblasto", "linaje": "Linfoide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/linfoblastos.jpeg", "tamano": "10–18 µm", "nucleo": "Redondo u oval, cromatina fina y homogénea, uno o dos nucléolos poco visibles", "citoplasma": "Escaso, azul intenso (basófilo), sin gránulos", "nc": "Alta", "rango": "Normal: ausentes en sangre periférica; en médula, menos del 5 %", "dx": "Leucemia linfoblástica aguda (LLA), más frecuente en niños. Se confirma con citometría de flujo (TdT, CD19, CD3)."},
+  {"nombre": "Linfocito grande granular", "linaje": "Linfoide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/linfocito_grande_granular.jpeg", "tamano": "12–20 µm", "nucleo": "Redondo u oval, a veces excéntrico, cromatina condensada", "citoplasma": "Abundante, azul pálido, con gránulos azurófilos gruesos", "nc": "Baja", "rango": "Cerca del 10–15 % de los linfocitos (células NK y T citotóxicas)", "nota": "Si la linfocitosis de linfocitos grandes granulares persiste más de 6 meses: leucemia de LGL, con neutropenia y artritis reumatoide.", "fuente": "<a href=\"https://pmc.ncbi.nlm.nih.gov/articles/PMC8918699\" target=\"_blank\" rel=\"noopener\">Am J Blood Res 2022 (leucemia de LGL)</a>"},
+  {"nombre": "Linfocitos vacuolados", "linaje": "Linfoide", "estadio": "Alteración", "img": "fotos13112026 1 14 am/linfocitos_vacuolados.jpg.jpeg", "tamano": "7–15 µm", "nucleo": "Redondo, cromatina densa", "citoplasma": "Escaso a moderado, azul, con vacuolas claras", "nc": "Alta", "rango": "Normal: pocos", "dx": "Enfermedades de depósito lisosomal (Pompe, Niemann-Pick), infecciones virales y artefacto por EDTA o muestra guardada."},
+  {"nombre": "Linfocito", "linaje": "Linfoide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/linfocitos.jpeg", "tamano": "7–10 µm (pequeño); hasta 15 µm (grande)", "nucleo": "Redondo, cromatina densa en bloques", "citoplasma": "Escaso, azul claro (basófilo leve)", "nc": "Alta", "rango": "1.000–4.000/µL (20–40 % de los leucocitos)", "nota": "Linfocitosis: infecciones virales, leucemia linfática crónica."},
+  {"nombre": "Megacarioblasto", "linaje": "Plaquetas", "estadio": "inmaduro", "img":"fotos13112026 1 14 am/megacarioblasto_2.jpeg", "tamano": "10–25 µm", "nucleo": "Redondo u oval, a veces indentado, cromatina fina y nucléolos", "citoplasma": "Escaso, basófilo intenso, sin gránulos, con proyecciones (\"blebs\")", "nc": "Alta", "rango": "Normal: ausente en sangre periférica", "dx": "Leucemia megacarioblástica aguda (LMA-M7), frecuente en el síndrome de Down. Se confirma con CD41 y CD61.", "fuente": "<a href=\"https://pmc.ncbi.nlm.nih.gov/articles/PMC9999050\" target=\"_blank\" rel=\"noopener\">Cureus 2023 (leucemia megacarioblástica aguda)</a>"},
+  {"nombre": "Megacarioblasto", "linaje": "Plaquetas", "estadio": "inmaduro", "img":"fotos13112026 1 14 am/megacarioblasto_3.jpeg", "tamano": "10–25 µm", "nucleo": "Redondo u oval, a veces indentado, cromatina fina y nucléolos", "citoplasma": "Escaso, basófilo intenso, sin gránulos, con proyecciones (\"blebs\")", "nc": "Alta", "rango": "Normal: ausente en sangre periférica", "dx": "Leucemia megacarioblástica aguda (LMA-M7), frecuente en el síndrome de Down. Se confirma con CD41 y CD61.", "fuente": "<a href=\"https://pmc.ncbi.nlm.nih.gov/articles/PMC9999050\" target=\"_blank\" rel=\"noopener\">Cureus 2023 (leucemia megacarioblástica aguda)</a>"},
+  {"nombre": "Megacarioblasto", "linaje": "Plaquetas", "estadio": "inmaduro", "img": "fotos13112026 1 14 am/megacarioblasto_4.jpeg", "tamano": "10–25 µm", "nucleo": "Redondo u oval, a veces indentado, cromatina fina y nucléolos", "citoplasma": "Escaso, basófilo intenso, sin gránulos, con proyecciones (\"blebs\")", "nc": "Alta", "rango": "Normal: ausente en sangre periférica", "dx": "Leucemia megacarioblástica aguda (LMA-M7), frecuente en el síndrome de Down. Se confirma con CD41 y CD61.", "fuente": "<a href=\"https://pmc.ncbi.nlm.nih.gov/articles/PMC9999050\" target=\"_blank\" rel=\"noopener\">Cureus 2023 (leucemia megacarioblástica aguda)</a>"},
+  {"nombre": "Megacarioblasto", "linaje": "Plaquetas", "estadio": "inmaduro", "img": "fotos13112026 1 14 am/megarioblasto.jpeg", "tamano": "10–25 µm", "nucleo": "Redondo u oval, a veces indentado, cromatina fina y nucléolos", "citoplasma": "Escaso, basófilo intenso, sin gránulos, con proyecciones (\"blebs\")", "nc": "Alta", "rango": "Normal: ausente en sangre periférica", "dx": "Leucemia megacarioblástica aguda (LMA-M7), frecuente en el síndrome de Down. Se confirma con CD41 y CD61.", "fuente": "<a href=\"https://pmc.ncbi.nlm.nih.gov/articles/PMC9999050\" target=\"_blank\" rel=\"noopener\">Cureus 2023 (leucemia megacarioblástica aguda)</a>"},
+  {"nombre": "Metamielocito", "linaje": "Mieloide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/metamielocito.jpeg", "tamano": "10–18 µm", "nucleo": "Indentado en forma de riñón o frijol, cromatina condensada, sin nucléolo", "citoplasma": "Rosado pálido, con abundantes gránulos secundarios", "rango": "Ausente en sangre periférica normal; presente en médula ósea", "nota": "Su aparición en sangre (desviación a la izquierda) se ve en infección, inflamación, leucemia mieloide crónica y mielofibrosis."},
+  {"nombre": "Metamielocito", "linaje": "Mieloide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/metamielocitos_2.jpeg", "tamano": "10–18 µm", "nucleo": "Indentado en forma de riñón o frijol, cromatina condensada, sin nucléolo", "citoplasma": "Rosado pálido, con abundantes gránulos secundarios", "rango": "Ausente en sangre periférica normal; presente en médula ósea", "nota": "Su aparición en sangre (desviación a la izquierda) se ve en infección, inflamación, leucemia mieloide crónica y mielofibrosis."},
+  {"nombre": "Monoblasto", "linaje": "Monocítico", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/monoblasto.jpeg", "tamano": "15–25 µm", "nucleo": "Grande, redondo u oval, cromatina fina y laxa, 1 a 3 nucléolos prominentes", "citoplasma": "Abundante, azul grisáceo, sin gránulos o con finos, a veces con vacuolas", "nc": "Alta", "rango": "Normal: ausente en sangre periférica", "dx": "Leucemia mieloide aguda monoblástica o monocítica (M5), con infiltración de encías, piel y SNC. Esterasa inespecífica positiva.", "fuente": "<a href=\"https://ccga.io/index.php/HAEM4:Acute_Monoblastic_and_Monocytic_Leukemia\" target=\"_blank\" rel=\"noopener\">CGC HAEM4: leucemia monoblástica y monocítica aguda</a>"},
+  {"nombre": "Neutrófilo de Pelger-Huët", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/Pelger_huet.jpg.jpeg", "tamano": "10–15 µm", "nucleo": "Hiposegmentado: 2 lóbulos en forma de pesa o pince-nez, o redondo; cromatina muy condensada", "citoplasma": "Pálido, rosado, con granulación normal (en la forma congénita)", "rango": "Normal: 3 a 5 lóbulos", "dx": "Congénita: autosómica dominante, benigna. Pseudo-Pelger-Huët (adquirida, hipogranular): síndromes mielodisplásicos, tras quimioterapia."},
+  {"nombre": "Plasmocito", "linaje": "Linfoide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/plasmocito_2.jpg.jpeg", "tamano": "10–20 µm", "nucleo": "Redondo y excéntrico, cromatina en grumos (rueda de carreta)", "citoplasma": "Abundante, intensamente basófilo, con halo claro perinuclear (aparato de Golgi)", "nc": "Baja", "rango": "Ausentes en sangre periférica normal; en médula ósea, menos del 5 %", "nota": "Su presencia en sangre puede verse en infecciones virales, mieloma múltiple y leucemia de células plasmáticas.", "fuente": "<a href=\"https://www.ncbi.nlm.nih.gov/books/NBK556082/\" target=\"_blank\" rel=\"noopener\">StatPearls (NCBI): Histology, Plasma Cells</a>"},
+  {"nombre": "Plasmocito", "linaje": "Linfoide", "estadio": "Maduro", "img": "fotos13112026 1 14 am/plasmocitos.jpg.jpeg", "tamano": "10–20 µm", "nucleo": "Redondo y excéntrico, cromatina en grumos (rueda de carreta)", "citoplasma": "Abundante, intensamente basófilo, con halo claro perinuclear (aparato de Golgi)", "nc": "Baja", "rango": "Ausentes en sangre periférica normal; en médula ósea, menos del 5 %", "nota": "Su presencia en sangre puede verse en infecciones virales, mieloma múltiple y leucemia de células plasmáticas.", "fuente": "<a href=\"https://www.ncbi.nlm.nih.gov/books/NBK556082/\" target=\"_blank\" rel=\"noopener\">StatPearls (NCBI): Histology, Plasma Cells</a>"},
+  {"nombre": "Proeritroblasto", "linaje": "Eritroide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/proeritoblasto_2.jpeg", "tamano": "14–20 µm", "nucleo": "Grande, redondo, cromatina fina, 1 a 3 nucléolos", "citoplasma": "Escaso, intensamente basófilo, con zona perinuclear clara", "nc": "Alta", "rango": "Solo en médula ósea; menos del 1 % de las células nucleadas", "dx": "Aumenta en la eritroleucemia; los gigantoproeritroblastos aparecen en la infección por parvovirus B19."},
+  {"nombre": "Proeritroblasto", "linaje": "Eritroide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/Proeritoblasto.jpeg", "tamano": "14–20 µm", "nucleo": "Grande, redondo, cromatina fina, 1 a 3 nucléolos", "citoplasma": "Escaso, intensamente basófilo, con zona perinuclear clara", "nc": "Alta", "rango": "Solo en médula ósea; menos del 1 % de las células nucleadas", "dx": "Aumenta en la eritroleucemia; los gigantoproeritroblastos aparecen en la infección por parvovirus B19."},
+  {"nombre": "Prolinfocito", "linaje": "Linfoide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/prolinfocito.jpg.jpeg", "tamano": "10–18 µm", "nucleo": "Redondo u oval, cromatina condensada, nucléolo central prominente", "citoplasma": "Moderado, azul pálido", "nc": "Media", "rango": "Normal: ausentes en sangre periférica", "dx": "Leucemia prolinfocítica B (al menos 55 % de los linfocitos con morfología de prolinfocito) o T. En la leucemia linfática crónica suelen ser pocos, siempre menos del 55 %.", "fuente": "<a href=\"https://thejh.org/index.php/jh/article/view/1096/725\" target=\"_blank\" rel=\"noopener\">J Hematol 2023 (leucemia prolinfocítica B)</a>"},
+  {"nombre": "Prolinfocito", "linaje": "Linfoide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/prolinfocito_2.jpeg", "tamano": "10–18 µm", "nucleo": "Redondo u oval, cromatina condensada, nucléolo central prominente", "citoplasma": "Moderado, azul pálido", "nc": "Media", "rango": "Normal: ausentes en sangre periférica", "dx": "Leucemia prolinfocítica B (al menos 55 % de los linfocitos con morfología de prolinfocito) o T. En la leucemia linfática crónica suelen ser pocos, siempre menos del 55 %.", "fuente": "<a href=\"https://thejh.org/index.php/jh/article/view/1096/725\" target=\"_blank\" rel=\"noopener\">J Hematol 2023 (leucemia prolinfocítica B)</a>"},
+  {"nombre": "Prolinfocito", "linaje": "Linfoide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/prolinfocito_3.jpeg", "tamano": "10–18 µm", "nucleo": "Redondo u oval, cromatina condensada, nucléolo central prominente", "citoplasma": "Moderado, azul pálido", "nc": "Media", "rango": "Normal: ausentes en sangre periférica", "dx": "Leucemia prolinfocítica B (al menos 55 % de los linfocitos con morfología de prolinfocito) o T. En la leucemia linfática crónica suelen ser pocos, siempre menos del 55 %.", "fuente": "<a href=\"https://thejh.org/index.php/jh/article/view/1096/725\" target=\"_blank\" rel=\"noopener\">J Hematol 2023 (leucemia prolinfocítica B)</a>"},
+  {"nombre": "Promielocito", "linaje": "Mieloide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/promielocito.jpeg", "tamano": "15–25 µm", "nucleo": "Redondo u oval, a veces excéntrico, cromatina laxa, nucléolo visible o no", "citoplasma": "Basófilo, con abundantes gránulos azurófilos (primarios) rojo-púrpura", "nc": "Media", "rango": "Ausente en sangre periférica normal; en médula ósea, 1–5 % de las células nucleadas", "nota": "En sangre: infección grave o recuperación medular. Si son anormales e hipergranulares: leucemia promielocítica aguda."},
+  {"nombre": "Promielocito", "linaje": "Mieloide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/promielocito_2.jpg.jpeg", "tamano": "15–25 µm", "nucleo": "Redondo u oval, a veces excéntrico, cromatina laxa, nucléolo visible o no", "citoplasma": "Basófilo, con abundantes gránulos azurófilos (primarios) rojo-púrpura", "nc": "Media", "rango": "Ausente en sangre periférica normal; en médula ósea, 1–5 % de las células nucleadas", "nota": "En sangre: infección grave o recuperación medular. Si son anormales e hipergranulares: leucemia promielocítica aguda."},
+  {"nombre":"Promielocito en reloj de arena", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/Promielocito_Reloj_de_arena_2.jpeg", "tamano": "15–25 µm", "nucleo": "Bilobulado, con constricción central en forma de reloj de arena, a menudo tapado por los gránulos", "citoplasma": "Hipergranular, gránulos azurófilos gruesos rojo-púrpura", "rango": "Normal: ausentes", "dx": "Promielocitos anormales de la leucemia promielocítica aguda (LPA), t(15;17)."},
+  {"nombre": "Promielocito", "linaje": "Mieloide", "estadio": "Inmaduro", "img": "fotos13112026 1 14 am/promielocito_3.jpeg", "tamano": "15–25 µm", "nucleo": "Redondo u oval, a veces excéntrico, cromatina laxa, nucléolo visible o no", "citoplasma": "Basófilo, con abundantes gránulos azurófilos (primarios) rojo-púrpura", "nc": "Media", "rango": "Ausente en sangre periférica normal; en médula ósea, 1–5 % de las células nucleadas", "nota": "En sangre: infección grave o recuperación medular. Si son anormales e hipergranulares: leucemia promielocítica aguda."},
+  {"nombre": "Promielocito con núcleo en espejo", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "fotos13112026 1 14 am/promielocito_nucleo_en_espejo.jpeg", "tamano": "15–25 µm", "nucleo": "Bilobulado, con dos lóbulos simétricos que se ven como imagen en espejo", "citoplasma": "Basófilo, con gránulos azurófilos abundantes", "rango": "Normal: ausentes", "dx": "Promielocitos anormales de la leucemia promielocítica aguda.", "nota": "Descripción por confirmar con el docente."},
+  {"nombre": "Promonocito", "linaje": "Monocítico", "estadio": "Inmaduro", "img": "img/promonocito_2.jpg.jpeg", "tamano": "Grande, algo menor que el monoblasto", "nucleo": "Irregular, con pliegues delicados e indentaciones; cromatina fina; nucléolos pequeños y poco definidos", "citoplasma": "Menos abundante que en el monoblasto, con gránulos finos", "rango": "Ausente en sangre periférica normal", "dx": "Se cuenta como equivalente de blasto en la leucemia monocítica aguda y en la leucemia mielomonocítica aguda; también ayuda a subclasificar la leucemia mielomonocítica crónica.", "fuente": "<a href=\"https://imagebank.hematology.org/image/63685/promonocytes\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: promonocitos</a>"},
+  {"nombre": "Promonocito", "linaje": "Monocítico", "estadio": "Inmaduro", "img": "img/promonocito_3.jpeg", "tamano": "Grande, algo menor que el monoblasto", "nucleo": "Irregular, con pliegues delicados e indentaciones; cromatina fina; nucléolos pequeños y poco definidos", "citoplasma": "Menos abundante que en el monoblasto, con gránulos finos", "rango": "Ausente en sangre periférica normal", "dx": "Se cuenta como equivalente de blasto en la leucemia monocítica aguda y en la leucemia mielomonocítica aguda; también ayuda a subclasificar la leucemia mielomonocítica crónica.", "fuente": "<a href=\"https://imagebank.hematology.org/image/63685/promonocytes\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: promonocitos</a>"},
+  {"nombre": "Promonocito", "linaje": "Monocítico", "estadio": "Inmaduro", "img": "img/promonocito.jpeg", "tamano": "Grande, algo menor que el monoblasto", "nucleo": "Irregular, con pliegues delicados e indentaciones; cromatina fina; nucléolos pequeños y poco definidos", "citoplasma": "Menos abundante que en el monoblasto, con gránulos finos", "rango": "Ausente en sangre periférica normal", "dx": "Se cuenta como equivalente de blasto en la leucemia monocítica aguda y en la leucemia mielomonocítica aguda; también ayuda a subclasificar la leucemia mielomonocítica crónica.", "fuente": "<a href=\"https://imagebank.hematology.org/image/63685/promonocytes\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: promonocitos</a>"},
+  {"nombre": "Anulocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/anulocitos.jpg", "tamano": "7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Hipocromía intensa: solo un anillo fino de hemoglobina", "rango": "Normal: ausentes (palidez central menor a un tercio del diámetro)", "dx": "Anemia ferropénica, talasemia, anemia sideroblástica."},
+  {"nombre": "Linfocito clivado", "linaje": "Linfoide", "estadio": "Alteración", "img": "imagenes ultimas/linfocito_clivado.jpg", "nucleo": "Con una hendidura o muesca profunda (núcleo hendido)", "citoplasma": "Escaso, propio de linfocito", "rango": "Normal: ausentes o escasos", "dx": "Se describe en el linfoma folicular con expresión en sangre periférica y en otras neoplasias linfoides de células B.", "nota": "El tamaño y la profundidad de la hendidura varían; confirma con el docente el criterio usado en tu curso.", "fuente": "<a href=\"https://imagebank.hematology.org/image/3430/peripheralizing-follicular-lymphoma-with-atypical-morphology--4\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: linfoma folicular, célula de núcleo hendido</a>"},
+  {"nombre": "Punteado basofilo", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/punteado_basofilo_2.jpeg", "tamano": "Gránulos puntiformes dentro de un eritrocito de 7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Eritrocito con puntos azul-púrpura, finos o gruesos, repartidos por todo el citoplasma", "inclusiones": "Agregados de ARN ribosómico", "rango": "Normal: ausente el punteado grueso", "dx": "Punteado grueso (nunca normal): talasemia, intoxicación por plomo, síndrome mielodisplásico, anemia sideroblástica y anemia diseritropoyética congénita. Punteado fino: se asocia a reticulocitosis, sin significado patológico específico.", "fuente": "<a href=\"https://www.thebloodproject.com/cases-archive/session-2/red-cell-inclusions/\" target=\"_blank\" rel=\"noopener\">The Blood Project: inclusiones eritrocitarias</a>"},
+  {"nombre": "Punteado basofilo", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/punteado_basofilo.jpeg", "tamano": "Gránulos puntiformes dentro de un eritrocito de 7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Eritrocito con puntos azul-púrpura, finos o gruesos, repartidos por todo el citoplasma", "inclusiones": "Agregados de ARN ribosómico", "rango": "Normal: ausente el punteado grueso", "dx": "Punteado grueso (nunca normal): talasemia, intoxicación por plomo, síndrome mielodisplásico, anemia sideroblástica y anemia diseritropoyética congénita. Punteado fino: se asocia a reticulocitosis, sin significado patológico específico.", "fuente": "<a href=\"https://www.thebloodproject.com/cases-archive/session-2/red-cell-inclusions/\" target=\"_blank\" rel=\"noopener\">The Blood Project: inclusiones eritrocitarias</a>"},
+  {"nombre": "Estomatocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Estomatocito.jpg.jpeg", "tamano": "Similar al eritrocito normal (7–8 µm)", "nucleo": "Sin núcleo", "citoplasma": "Hendidura central lineal en lugar de palidez redonda, con aspecto de boca", "rango": "Normal: ausentes", "dx": "Consumo excesivo de alcohol y hepatopatía alcohólica, estomatocitosis hereditaria y esferocitosis hereditaria.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Estomatocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Estomatocito_2.jpg.jpeg", "tamano": "Similar al eritrocito normal (7–8 µm)", "nucleo": "Sin núcleo", "citoplasma": "Hendidura central lineal en lugar de palidez redonda, con aspecto de boca", "rango": "Normal: ausentes", "dx": "Consumo excesivo de alcohol y hepatopatía alcohólica, estomatocitosis hereditaria y esferocitosis hereditaria.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Esferocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Esferocito.jpg.jpeg", "tamano": "5–7 µm (menores que lo normal)", "nucleo": "Sin núcleo", "citoplasma": "Denso, intensamente teñido, sin palidez central", "rango": "Normal: 0–2 %", "dx": "Esferocitosis hereditaria, anemia hemolítica autoinmune (con Coombs positivo).", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Esferocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Esferocito_2.jpg.jpeg", "tamano": "5–7 µm (menores que lo normal)", "nucleo": "Sin núcleo", "citoplasma": "Denso, intensamente teñido, sin palidez central", "rango": "Normal: 0–2 %", "dx": "Esferocitosis hereditaria, anemia hemolítica autoinmune (con Coombs positivo).", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Esquistocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Esquistocito;2.jpg.jpeg", "tamano": "Fragmentos menores de 7 µm", "nucleo": "Sin núcleo", "citoplasma": "Fragmento irregular (casco, triángulo)", "rango": "Normal: menos de 1 %", "dx": "Anemia hemolítica microangiopática (CID, PTT, SHU), anemia hemolítica mecánica y válvulas cardíacas.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Celula en champiñon", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Celula_en_champiñon.jpg.jpeg", "tamano": "6–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Eritrocito con pinzamiento o constricción que le da forma de hongo (célula pinzada)", "rango": "Normal: ausentes", "dx": "Esferocitosis hereditaria, sobre todo por déficit de banda 3.", "nota": "Confirma con el docente el nombre usado en tu curso."},
+  {"nombre": "Dianocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Dianocito.jpeg", "tamano": "7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Forma de diana: zona central teñida rodeada de un halo claro", "rango": "Normal: 0–2 %", "dx": "Talasemia, hemoglobinopatías (HbS, HbC), hepatopatía, ferropenia intensa y tras esplenectomía.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Dianocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Dianocito_2.jpeg", "tamano": "7–8 µm", "nucleo": "Sin núcleo", "citoplasma": "Forma de diana: zona central teñida rodeada de un halo claro", "rango": "Normal: 0–2 %", "dx": "Talasemia, hemoglobinopatías (HbS, HbC), hepatopatía, ferropenia intensa y tras esplenectomía.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Esquistocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Esquistocito.jpg.jpeg", "tamano": "Fragmentos menores de 7 µm", "nucleo": "Sin núcleo", "citoplasma": "Fragmento irregular (casco, triángulo)", "rango": "Normal: menos de 1 %", "dx": "Anemia hemolítica microangiopática (CID, PTT, SHU), anemia hemolítica mecánica y válvulas cardíacas.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Acantocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Acantocitos_2.jpg.jpeg", "tamano": "Eritrocito algo más pequeño que el normal", "nucleo": "Sin núcleo", "citoplasma": "Sin palidez central, con pocas espículas (hasta unas 20) de longitud y distribución irregulares, la mayoría de punta aguda", "rango": "Normal: ausentes", "dx": "Abetalipoproteinemia, hepatopatía avanzada (por lo general alcohólica), tras esplenectomía, neuroacantocitosis (síndrome de McLeod), anorexia nerviosa e inanición.", "nota": "Se distinguen de los equinocitos, que tienen más espículas, cortas y regulares.", "fuente": "<a href=\"https://www.thebloodproject.com/wp-content/uploads/2022/04/Acanthocyte-4.pdf\" target=\"_blank\" rel=\"noopener\">The Blood Project: acantocito</a>; <a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Acantocitos", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Acantocitos.jpg.jpeg", "tamano": "Eritrocito algo más pequeño que el normal", "nucleo": "Sin núcleo", "citoplasma": "Sin palidez central, con pocas espículas (hasta unas 20) de longitud y distribución irregulares, la mayoría de punta aguda", "rango": "Normal: ausentes", "dx": "Abetalipoproteinemia, hepatopatía avanzada (por lo general alcohólica), tras esplenectomía, neuroacantocitosis (síndrome de McLeod), anorexia nerviosa e inanición.", "nota": "Se distinguen de los equinocitos, que tienen más espículas, cortas y regulares.", "fuente": "<a href=\"https://www.thebloodproject.com/wp-content/uploads/2022/04/Acanthocyte-4.pdf\" target=\"_blank\" rel=\"noopener\">The Blood Project: acantocito</a>; <a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Eliptocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Eliptocito_2.jpg.jpeg", "tamano": "Eje mayor de 8–12 µm", "nucleo": "Sin núcleo", "citoplasma": "Forma ovalada o elíptica, con el eje largo cerca del doble del corto", "rango": "Normal: menos de 2 % de ovalocitos", "dx": "Eliptocitosis hereditaria, ferropenia (células en lápiz), anemia megaloblástica, talasemia y mielofibrosis.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Eliptocito", "linaje": "Alteraciones eritrocitarias", "estadio": "Alteración", "img": "imagenes ultimas/Eliptocito.jpg.jpeg", "tamano": "Eje mayor de 8–12 µm", "nucleo": "Sin núcleo", "citoplasma": "Forma ovalada o elíptica, con el eje largo cerca del doble del corto", "rango": "Normal: menos de 2 % de ovalocitos", "dx": "Eliptocitosis hereditaria, ferropenia (células en lápiz), anemia megaloblástica, talasemia y mielofibrosis.", "fuente": "<a href=\"https://www.sun.ac.za/english/faculty/healthsciences/haematological_pathology/Pages/Red-blood-cell-morphology.aspx\" target=\"_blank\" rel=\"noopener\">Univ. de Stellenbosch: morfología eritrocitaria</a>"},
+  {"nombre": "Trofozoito maduro de Plasmodium Vivax", "linaje": "Hemoparasitos", "estadio": "Trofozoíto maduro", "img": "imagenes ultimas/Trofozoito_Plasmodium_Vivax_2.jpg.jpeg", "tamano": "Eritrocito parasitado agrandado 1,5 a 2 veces", "nucleo": "Cromatina grande", "citoplasma": "Ameboide, con seudópodos delgados y vacuolas grandes", "inclusiones": "Puntos de Schüffner (con buena tinción); pigmento fino pardo-amarillento", "tincion": "Giemsa (gota gruesa y frotis delgado)", "rango": "Normal: ausente", "dx": "Malaria por Plasmodium vivax.", "fuente": "<a href=\"https://www.cdc.gov/dpdx/malaria/index.html\" target=\"_blank\" rel=\"noopener\">CDC DPDx: malaria</a>"},
+  {"nombre": "Trofozoito maduro de Plasmodium Vivax", "linaje": "Hemoparasitos", "estadio": "Trofozoíto maduro", "img": "imagenes ultimas/Trofozoito_Plasmodium_Vivax.jpeg", "tamano": "Eritrocito parasitado agrandado 1,5 a 2 veces", "nucleo": "Cromatina grande", "citoplasma": "Ameboide, con seudópodos delgados y vacuolas grandes", "inclusiones": "Puntos de Schüffner (con buena tinción); pigmento fino pardo-amarillento", "tincion": "Giemsa (gota gruesa y frotis delgado)", "rango": "Normal: ausente", "dx": "Malaria por Plasmodium vivax.", "fuente": "<a href=\"https://www.cdc.gov/dpdx/malaria/index.html\" target=\"_blank\" rel=\"noopener\">CDC DPDx: malaria</a>"},
+  {"nombre": "Gametocito de Plasmodium Vivax", "linaje": "Hemoparasitos", "estadio": "Gametocito", "img": "imagenes ultimas/Gametocito_Plasmodium_Vivax.jpg.jpeg", "tamano": "Redondo u oval; llena casi todo el eritrocito, que está agrandado", "nucleo": "Macrogametocito: cromatina compacta y excéntrica. Microgametocito: cromatina más difusa", "citoplasma": "Macrogametocito: azul más oscuro. Microgametocito: azul pálido, rosado o grisáceo", "inclusiones": "Pigmento pardo fino disperso; puntos de Schüffner con buena tinción", "tincion": "Giemsa (gota gruesa y frotis delgado)", "rango": "Normal: ausente", "dx": "Malaria por Plasmodium vivax.", "fuente": "<a href=\"https://www.cdc.gov/dpdx/malaria/index.html\" target=\"_blank\" rel=\"noopener\">CDC DPDx: malaria</a>"},
+  {"nombre": "Celulas de Burkitt", "linaje": "Linfoide", "estadio": "Alteración", "img": "imagenes ultimas/Celulas_de_burkin.jpg.jpeg", "tamano": "10–15 µm, con relación N:C elevada", "nucleo": "Central y redondo, cromatina gruesa en grumos, nucléolos visibles y membrana regular", "citoplasma": "Escaso, intensamente basófilo, sin gránulos; a veces con vacuolas lipídicas", "nc": "Alta", "rango": "Normal: ausentes en sangre periférica", "dx": "Linfoma de Burkitt y leucemia de Burkitt (linfoblasto L3 de la clasificación FAB).", "nota": "El diagnóstico suele hacerse en una masa tumoral de crecimiento rápido o en un derrame; en sangre y médula se ve sobre todo en la leucemia de Burkitt.", "fuente": "<a href=\"https://www.horiba.com/esp/healthcare/hematovision/white-blood-cells/lymphocytic/abnormal/l3-lymphoblast-burkitt-type\" target=\"_blank\" rel=\"noopener\">HORIBA Hematovision: linfoblasto L3 (tipo Burkitt)</a>"},
+  {"nombre": "Nucleo en anillo", "linaje": "Alteraciones mieloides", "estadio": "Alteración", "img": "imagenes ultimas/Nucleo_en_anillo.jpeg", "nucleo": "Con forma de anillo (rosquilla), con un hueco central", "citoplasma": "Neutrófilo con núcleo anular", "rango": "Normal: pocas o ausentes; pueden verse incluso en personas sanas", "dx": "Se describe en leucemia mieloide crónica, síndromes mielodisplásicos y anemia megaloblástica; la formación del anillo se relaciona con la hiposegmentación granulocítica.", "nota": "Hallazgo inespecífico, de significado clínico no definido.", "fuente": "<a href=\"https://imagebank.hematology.org/image/65453/ring-neutrophil-1\" target=\"_blank\" rel=\"noopener\">ASH Image Bank: neutrófilo en anillo</a>; <a href=\"https://search.bvsalud.org/gim/resource/en/wpr-720582\" target=\"_blank\" rel=\"noopener\">Neutrófilos en anillo e hiposegmentación (Korean J Hematol)</a>"},
+  {"nombre": "Tripomastigote de T. cruzi", "linaje": "Hemoparasitos", "estadio": "Tripomastigote", "img": "imagenes ultimas/T.cruzi_tripomastigote.jpeg", "tamano": "12–30 µm de largo", "nucleo": "Cinetoplasto grande", "citoplasma": "En frotis fijado suele tener forma de C; flagelo", "tincion": "Giemsa", "rango": "Normal: ausente", "dx": "Enfermedad de Chagas (tripanosomiasis americana). En la fase aguda se ven tripomastigotes móviles en sangre fresca; en la fase crónica rara vez se ven y se diagnostica por serología.", "fuente": "<a href=\"https://www.cdc.gov/dpdx/trypanosomiasisAmerican\" target=\"_blank\" rel=\"noopener\">CDC DPDx: Chagas</a>"},
+  {"nombre": "Linfocito reactivo", "linaje": "Linfoide", "estadio": "Alteración", "img": "imagenes ultimas/Linfocito_reacitvo.jpg.jpeg", "tamano": "15–25 µm", "nucleo": "Irregular u oval, cromatina más laxa", "citoplasma": "Abundante, basófilo (azul intenso), de borde festoneado que se amolda a los eritrocitos vecinos", "nc": "Media", "rango": "Normal: pocos o ninguno", "dx": "Mononucleosis infecciosa (virus de Epstein-Barr), citomegalovirus y otras infecciones virales, reacciones a fármacos."},
+  {"nombre": "Linfocito reactivo", "linaje": "Linfoide", "estadio": "Alteración", "img": "imagenes ultimas/Linfocito_reactivo_2-jpg.jpeg", "tamano": "15–25 µm", "nucleo": "Irregular u oval, cromatina más laxa", "citoplasma": "Abundante, basófilo (azul intenso), de borde festoneado que se amolda a los eritrocitos vecinos", "nc": "Media", "rango": "Normal: pocos o ninguno", "dx": "Mononucleosis infecciosa (virus de Epstein-Barr), citomegalovirus y otras infecciones virales, reacciones a fármacos."}
+
+
+];
+
+/* ========= 3. LÓGICA (no necesitas tocar esto) ========= */
+// Agrupa las células por categoría, en el orden de LINAJES
+const ORDEN = Object.keys(LINAJES);
+CELULAS.sort((a,b)=>ORDEN.indexOf(a.linaje)-ORDEN.indexOf(b.linaje));
+const $ = id => document.getElementById(id);
+let linaje = "Todos", texto = "";
+
+// Imagen de respaldo si aún no subes la foto
+function respaldo(color){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#2b1a4d"/><circle cx="100" cy="100" r="62" fill="${color}" opacity=".55"/><circle cx="100" cy="100" r="34" fill="#4A2D86"/></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+function setImg(el, c){
+  el.onerror = () => { el.onerror = null; el.src = respaldo(LINAJES[c.linaje]); };
+  el.src = c.img; el.alt = c.nombre + ", " + c.linaje;
+}
+
+// Chips
+const chips = $("chips");
+["Todos", ...Object.keys(LINAJES)].forEach(n=>{
+  const b = document.createElement("button");
+  b.className = "chip"; b.type = "button";
+  b.style.setProperty("--c", LINAJES[n] || "#34205F");
+  b.setAttribute("aria-pressed", n === "Todos");
+  b.innerHTML = "<i></i>" + n;
+  b.onclick = () => { linaje = n; [...chips.children].forEach(x=>x.setAttribute("aria-pressed", x===b)); pintar(); };
+  chips.appendChild(b);
+});
+$("q").oninput = e => { texto = e.target.value.trim().toLowerCase(); pintar(); };
+
+function pintar(){
+  const grid = $("grid"); grid.innerHTML = "";
+  const lista = CELULAS.filter(c =>
+    (linaje === "Todos" || c.linaje === linaje) &&
+    (c.nombre + " " + c.linaje + " " + c.estadio).toLowerCase().includes(texto));
+  let ultimo = null;
+  lista.forEach(c=>{
+    if(linaje === "Todos" && !texto && c.linaje !== ultimo){
+      ultimo = c.linaje;
+      const h = document.createElement("h2"); h.className = "grupo"; h.style.setProperty("--c", LINAJES[c.linaje]);
+      h.textContent = c.linaje + " (" + lista.filter(x=>x.linaje===c.linaje).length + ")"; grid.appendChild(h);
+    }
+    const b = document.createElement("button");
+    b.className = "card"; b.type = "button";
+    b.style.setProperty("--c", LINAJES[c.linaje]);
+    const im = document.createElement("img"); im.className = "ph"; im.loading = "lazy"; setImg(im, c);
+    b.appendChild(im);
+    b.insertAdjacentHTML("beforeend", `<h3>${c.nombre}</h3><p>${c.linaje} · ${c.estadio}</p>`);
+    b.onclick = () => abrir(c);
+    grid.appendChild(b);
+  });
+  $("vacio").hidden = lista.length > 0;
+  $("count").textContent = lista.length + " de " + CELULAS.length + " células";
+}
+
+// Ficha con zoom
+const dlg = $("dlg"), zoom = $("zoom"), fimg = $("f-img");
+function abrir(c){
+  setImg(fimg, c);
+  zoom.classList.remove("on"); fimg.style.transformOrigin = "50% 50%";
+  $("info").style.setProperty("--c", LINAJES[c.linaje]);
+  $("f-nombre").textContent = c.nombre;
+  $("f-lin").textContent = c.linaje + " · " + c.estadio;
+  const filas = [["Tamaño",c.tamano],["Núcleo",c.nucleo],["Citoplasma",c.citoplasma],["Inclusiones",c.inclusiones],["Relación N:C",c.nc],["Tinción",c.tincion||"Wright-Giemsa"],["Valor o rango de referencia",c.rango],["Enfermedad o diagnóstico",c.dx]];
+  $("f-dl").innerHTML = filas.filter(f=>f[1]).map(f=>`<dt>${f[0]}</dt><dd>${f[1]}</dd>`).join("");
+  $("f-nota").textContent = c.nota || ""; $("f-nota").hidden = !c.nota;
+  dlg.showModal();
+}
+zoom.onclick = () => zoom.classList.toggle("on");
+zoom.onmousemove = e => {
+  if(!zoom.classList.contains("on")) return;
+  const r = zoom.getBoundingClientRect();
+  fimg.style.transformOrigin = ((e.clientX-r.left)/r.width*100) + "% " + ((e.clientY-r.top)/r.height*100) + "%";
+};
+$("cerrar").onclick = () => dlg.close();
+dlg.addEventListener("click", e => { if(e.target === dlg) dlg.close(); });
+
+pintar();
+</script>
+</body>
+</html>
